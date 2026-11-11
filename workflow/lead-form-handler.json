@@ -1,0 +1,515 @@
+{
+  "name": "lead-form-handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "=lead-form",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [0, -16],
+      "id": "50a09e67-4a5c-43ad-bb48-b62b07b10a37",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_GOOGLE_SHEET_NAME",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_SHEET_GID",
+          "mode": "list",
+          "cachedResultName": "YOUR_SHEET_TAB_NAME",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEET_ID/edit#gid=YOUR_SHEET_GID"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата/час": "={{ DateTime.fromISO($json.body.data.submissionTime).setZone('Europe/Kyiv').toFormat('dd.MM.yyyy HH:mm') }}",
+            "Телефон": "={{ $json.body.data.contact.phone }}",
+            "Ім'я": "={{ $json.body.data.contact.name.first }} {{ $json.body.data.contact.name.last }}",
+            "Пошта": "={{ $json.body.data.contact.email }}",
+            "Коментар": "={{ $json.body.data['field:form_field_039f'] || '—' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Дата/час",
+              "displayName": "Дата/час",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ім'я",
+              "displayName": "Ім'я",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Телефон",
+              "displayName": "Телефон",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Пошта",
+              "displayName": "Пошта",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Коментар",
+              "displayName": "Коментар",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "cellFormat": "RAW"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [224, -16],
+      "id": "904d1555-b0d9-421d-919a-6485ff5df13b",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔥 Новий лід!\n\n👤 {{ $('Webhook').item.json.body.data.contact.name.first }} {{ $('Webhook').item.json.body.data.contact.name.last }}\n📞 {{ $('Webhook').item.json.body.data.contact.phone }}\n✉️ {{ $('Webhook').item.json.body.data.contact.email }}\n💬 {{ $('Webhook').item.json.body.data['field:form_field_039f'] || '—' }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [448, -16],
+      "id": "40c025e7-d8b7-4092-a032-0259d91d17c1",
+      "name": "Send a text message",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "lead",
+        "Company": "-",
+        "lastName": "={{ $('Webhook').item.json.body.data.contact.name.last }}",
+        "additionalFields": {
+          "Description": "={{ $('Webhook').item.json.body.data['field:form_field_039f'] || ''}}",
+          "Email": "={{ $('Webhook').item.json.body.data.contact.email }}",
+          "First_Name": "={{ $('Webhook').item.json.body.data.contact.name.first }}",
+          "Phone": "={{ $('Webhook').item.json.body.data.contact.phone }}"
+        }
+      },
+      "type": "n8n-nodes-base.zohoCrm",
+      "typeVersion": 1,
+      "position": [672, -16],
+      "id": "01abdf11-56f6-4109-9a92-74490e5cf76c",
+      "name": "Create a lead",
+      "credentials": {
+        "zohoOAuth2Api": {
+          "id": "",
+          "name": "Zoho account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3.5-super-vl:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [896, 208],
+      "id": "30266892-192c-432f-b23b-dc82bda9f6e7",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ответ Basic LLM Chain лежит в поле \"text\"\nconst raw = String($json.text ?? '');\n\nlet category = '';\nlet parseError = false;\n\ntry {\n  // убираем ```json ... ``` и вытаскиваем сам {...}\n  const clean = raw.replace(/```json|```/gi, '').trim();\n  const match = clean.match(/\\{[\\s\\S]*\\}/);\n  const parsed = JSON.parse(match ? match[0] : clean);\n  category = String(parsed.category ?? '').toLowerCase().trim();\n} catch (e) {\n  parseError = true;\n}\n\n// страховка: если модель выдала дичь -> warm\nif (!['hot', 'warm', 'cold'].includes(category)) {\n  category = 'warm';\n  parseError = true;\n}\n\n// заодно собираем данные клиента для Klaviyo\nconst c = $('Webhook').item.json.body.data.contact;\n\nreturn {\n  json: {\n    category,\n    parse_error: parseError,\n    email: c.email,\n    first_name: c.name?.first ?? '',\n    last_name: c.name?.last ?? '',\n    phone: c.phone ?? '',\n  },\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1248, -16],
+      "id": "4f10ec14-2b72-45d5-99e4-989b217f9faa",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer comment: \"\"\"{{ $('Webhook').item.json.body.data['field:form_field_039f'] || '' }}\"\"\"",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a lead qualification assistant for Karline, a cake shop with delivery.\nYour only task is to classify an incoming lead based on the customer's comment. Do not reply to the customer and do not explain your choice.\n\nToday's date: {{ $now.setZone('Europe/Kyiv').toFormat('yyyy-MM-dd') }}\n\nCategories:\n- hot: ready to buy now or very soon. Signs: a specific date or deadline (today, tomorrow, this week, \"for Friday\", \"on the 15th\"), urgency (\"urgent\", \"asap\"), a concrete order (what + how many + when), a clear occasion with timing, or asking how to pay / for card details.\n- warm: interested in ordering but not ready yet. Signs: asks about flavors, sizes, prices, delivery area or options; describes a wish without a date or concrete details; needs more information or convincing.\n- cold: no real buying intent. Signs: general questions about the company or its history, partnership or job inquiries, spam, text unrelated to ordering, or an empty comment.\n\nRules:\n- If the comment contains at least one clear hot sign, choose hot, even if other signs are present.\n- If unsure between warm and cold, choose warm only when the comment mentions buying or ordering something.\n\nExamples:\n\"Need a chocolate cake for 2 people on Saturday, send card details\" -> {\"category\":\"hot\"}\n\"How much is a cake for 10 people? What flavors do you have?\" -> {\"category\":\"warm\"}\n\"Tell me about the history of your company\" -> {\"category\":\"cold\"}\n\nOutput: valid JSON only, no markdown, no extra text. The category must be lowercase and one of: hot, warm, cold.\nFormat: {\"category\":\"hot\"}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [896, -16],
+      "id": "e77ef277-92ff-4293-aa10-91f4a242a4b8",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "=hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "1645c5e6-68ab-415d-928a-ca19f4e35189"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "hot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "08b271f1-dccc-4aa0-ac8e-74d8e3e25693",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "warm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "warm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 4
+                },
+                "conditions": [
+                  {
+                    "id": "be6b82f9-cf5a-44a8-a6d6-4fb859567709",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "cold",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cold"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [1472, -32],
+      "id": "93e70cb3-0e47-44a8-88da-f8fdf6c5ec3f",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/profile-import/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "revision", "value": "2025-10-15" },
+            { "name": "accept", "value": "application/vnd.api+json" },
+            { "name": "content-type", "value": "application/vnd.api+json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"profile\",\n    \"attributes\": {\n      \"email\": \"{{ $json.email }}\",\n      \"first_name\": \"{{ $json.first_name }}\",\n      \"last_name\": \"{{ $json.last_name }}\",\n      \"phone_number\": \"{{ $json.phone }}\"\n    }\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1728, -208],
+      "id": "4351160f-ef77-4c8a-9733-49157eb4e99a",
+      "name": "Klaviyo · Create profile (hot)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Klaviyo API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/lists/YOUR_HOT_LIST_ID/relationships/profiles/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "revision", "value": "2025-10-15" },
+            { "name": "accept", "value": "application/vnd.api+json" },
+            { "name": "content-type", "value": "application/vnd.api+json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": [\n    { \"type\": \"profile\", \"id\": \"{{ $json.data.id }}\" }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1952, -208],
+      "id": "9bdbc966-5b49-4ea8-9b11-f1f50c75ded4",
+      "name": "Klaviyo · Add to list (hot)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Klaviyo API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/profile-import/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "revision", "value": "2025-10-15" },
+            { "name": "accept", "value": "application/vnd.api+json" },
+            { "name": "content-type", "value": "application/vnd.api+json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"profile\",\n    \"attributes\": {\n      \"email\": \"{{ $json.email }}\",\n      \"first_name\": \"{{ $json.first_name }}\",\n      \"last_name\": \"{{ $json.last_name }}\",\n      \"phone_number\": \"{{ $json.phone }}\"\n    }\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1728, -16],
+      "id": "79b426ee-d43a-4cba-8a57-8e7c461a8136",
+      "name": "Klaviyo · Create profile (warm)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Klaviyo API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/lists/YOUR_WARM_LIST_ID/relationships/profiles/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "revision", "value": "2025-10-15" },
+            { "name": "accept", "value": "application/vnd.api+json" },
+            { "name": "content-type", "value": "application/vnd.api+json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": [\n    { \"type\": \"profile\", \"id\": \"{{ $json.data.id }}\" }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1952, -16],
+      "id": "c0036942-8469-4c14-866b-98c6102d1db3",
+      "name": "Klaviyo · Add to list (warm)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Klaviyo API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/profile-import/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "revision", "value": "2025-10-15" },
+            { "name": "accept", "value": "application/vnd.api+json" },
+            { "name": "content-type", "value": "application/vnd.api+json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"type\": \"profile\",\n    \"attributes\": {\n      \"email\": \"{{ $json.email }}\",\n      \"first_name\": \"{{ $json.first_name }}\",\n      \"last_name\": \"{{ $json.last_name }}\",\n      \"phone_number\": \"{{ $json.phone }}\"\n    }\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1728, 176],
+      "id": "74c66e85-2584-4dad-b8ac-911f974d4d18",
+      "name": "Klaviyo · Create profile (cold)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Klaviyo API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://a.klaviyo.com/api/lists/YOUR_COLD_LIST_ID/relationships/profiles/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "revision", "value": "2025-10-15" },
+            { "name": "accept", "value": "application/vnd.api+json" },
+            { "name": "content-type", "value": "application/vnd.api+json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": [\n    { \"type\": \"profile\", \"id\": \"{{ $json.data.id }}\" }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [1952, 176],
+      "id": "130bcc04-5c39-41f2-89b5-7be330694ddb",
+      "name": "Klaviyo · Add to list (cold)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Klaviyo API key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Append row in sheet", "type": "main", "index": 0 }]] },
+    "Append row in sheet": { "main": [[{ "node": "Send a text message", "type": "main", "index": 0 }]] },
+    "Send a text message": { "main": [[{ "node": "Create a lead", "type": "main", "index": 0 }]] },
+    "Create a lead": { "main": [[{ "node": "Basic LLM Chain", "type": "main", "index": 0 }]] },
+    "OpenRouter Chat Model": { "ai_languageModel": [[{ "node": "Basic LLM Chain", "type": "ai_languageModel", "index": 0 }]] },
+    "Basic LLM Chain": { "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]] },
+    "Code in JavaScript": { "main": [[{ "node": "Switch", "type": "main", "index": 0 }]] },
+    "Switch": {
+      "main": [
+        [{ "node": "Klaviyo · Create profile (hot)", "type": "main", "index": 0 }],
+        [{ "node": "Klaviyo · Create profile (warm)", "type": "main", "index": 0 }],
+        [{ "node": "Klaviyo · Create profile (cold)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Klaviyo · Create profile (hot)": { "main": [[{ "node": "Klaviyo · Add to list (hot)", "type": "main", "index": 0 }]] },
+    "Klaviyo · Create profile (warm)": { "main": [[{ "node": "Klaviyo · Add to list (warm)", "type": "main", "index": 0 }]] },
+    "Klaviyo · Create profile (cold)": { "main": [[{ "node": "Klaviyo · Add to list (cold)", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
